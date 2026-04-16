@@ -1,0 +1,111 @@
+{
+  "PS5": [
+    {
+      "nombre": "etahen_v2.4b.bin",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/etahen_v2.4b.bin",
+      "puerto": 9021
+    },
+    {
+      "nombre": "etahen_v2.5b.bin",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/etahen_v2.5b.bin",
+      "puerto": 9021
+    },
+    {
+      "nombre": "hen.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/hen.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "kstuff_v1.6.7_3.00_10.01.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/kstuff_v1.6.7_3.00_10.01.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "kstuff_lite_v1.01_3.00_12.00.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/kstuff_lite_v1.01_3.00_12.00.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "ftp_server_v0.18.2.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/ftp_server_v0.18.2.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "ftp_server_drakmor.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/ftp_server_drakmor.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "websrv_v0.30.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/websrv_v0.30.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "notify.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/notify.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "shadowmount_v1.6_12.00.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/shadowmount_v1.6_12.00.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "shadowmount_v1.6.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/shadowmount_v1.6.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "garlicsaves_v1.7.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/garlicsaves_v1.7.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "debug_v1.05b.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/debug_v1.05b.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "backpork_v0.1.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/backpork_v0.1.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "full_y2jb_block.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/full_y2jb_block.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "np_fake_signin_v1.1.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/np_fake_signin_v1.1.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "airpsx_v0.19.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps5/airpsx_v0.19.elf",
+      "puerto": 9021
+    }
+  ],
+  "PS4": [
+    {
+      "nombre": "np_fake_signin_v1.1.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps4/np_fake_signin_v1.1.elf",
+      "puerto": 9021
+    },
+    {
+      "nombre": "ftp_server_v0.16.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps4/ftp_server_v0.16.elf",
+      "puerto": 9090
+    },
+    {
+      "nombre": "ftp_server_drakmor.elf",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps4/ftp_server_drakmor.elf",
+      "puerto": 9090
+    },
+    {
+      "nombre": "GoldHEN_v2.4b18.7.bin",
+      "url": "https://raw.githubusercontent.com/JRRN/PsX-Payload-Multi-Injector/main/payloads/ps4/goldhen_v2.4b18.9.bin",
+      "puerto": 9090
+    }
+  ]
+}
