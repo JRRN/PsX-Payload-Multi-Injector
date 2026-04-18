@@ -3,6 +3,9 @@ name: Test, Build and Release
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - src/models/version.py
+      - docs/CHANGELOG.md
   pull_request:
     branches: [main]
 
@@ -17,6 +20,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install Linux Qt deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 \
+            libxcb-cursor0 \
+            libxkbcommon-x11-0 \
+            libegl1
       - run: pip install uv
       - run: uv pip install --system -r requirements-test.txt
       - run: python -m pytest tests -v
@@ -181,7 +193,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add src/models/version.py CHANGELOG.md
+          git add src/models/version.py docs/CHANGELOG.md
           git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
       - name: Push changes
         if: steps.check.outputs.has_changes == 'true'
@@ -196,12 +208,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version
-        id: get_version
-        run: |
-          VERSION=$(python3 -c "from src.models.version import __version__; print(__version__)")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Download all packaged artifacts
         uses: actions/download-artifact@v4
         with:
@@ -210,8 +216,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          name: PS MultiInjector v${{ steps.get_version.outputs.version }}
+          tag_name: v${{ needs.version-bump.outputs.version }}
+          name: PS MultiInjector v${{ needs.version-bump.outputs.version }}
           files: |
             release_files/**/*.{zip,tar.gz}
             release_files/**/*.{sha256}
