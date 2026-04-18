@@ -108,7 +108,9 @@ jobs:
           VERSION=${{ steps.get_version.outputs.version }}
           OUTDIR="PS_MultiInjector-$VERSION-${{ matrix.artifact_suffix }}"
 
-          mkdir "$OUTDIR"
+          : > checksums.txt
+          rm -rf "$OUTDIR" "$OUTDIR.zip" "$OUTDIR.tar.gz" "$OUTDIR.zip.sha256" "$OUTDIR.tar.gz.sha256"
+          mkdir -p "$OUTDIR"
           cp -r dist/PS_MultiInjector-$VERSION/* "$OUTDIR"/
 
           if [[ "$RUNNER_OS" == "Linux" ]]; then
@@ -124,6 +126,8 @@ jobs:
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
           SRC_ZIP="PS_MultiInjector-$VERSION-source.zip"
+
+          rm -f "$SRC_ZIP" "$SRC_ZIP.sha256"
 
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             zip -r "$SRC_ZIP" . \
