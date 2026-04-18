@@ -195,7 +195,7 @@ def bump_version(dry_run: bool = False) -> str:
     Returns new version string.
     """
     version_file = Path(__file__).parent.parent / "src/models/version.py"
-    changelog_file = Path(__file__).parent.parent / "CHANGELOG.md"
+    changelog_file = Path(__file__).parent.parent / "docs/CHANGELOG.md"
     
     if not version_file.exists():
         raise FileNotFoundError(f"Version file not found: {version_file}")
