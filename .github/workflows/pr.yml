@@ -1,0 +1,103 @@
+name: PR
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install Linux Qt deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 \
+            libxcb-cursor0 \
+            libxkbcommon-x11-0 \
+            libegl1
+      - run: pip install uv
+      - run: uv pip install --system -r requirements-test.txt
+      - run: python -m pytest tests -v
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_suffix: windows
+            windowed: ""
+          - os: macos-latest
+            artifact_suffix: macos-arm64
+            windowed: "--windowed"
+          - os: macos-13
+            artifact_suffix: macos-x86_64
+            windowed: "--windowed"
+          - os: ubuntu-20.04
+            artifact_suffix: linux
+            windowed: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Linux Qt deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 \
+            libxcb-cursor0 \
+            libxkbcommon-x11-0 \
+            libegl1
+
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(python -c "from src.models.version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build executable (one-folder)
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            SEP=";"
+          else
+            SEP=":"
+          fi
+          ICON_ARG=""
+          if [[ "$RUNNER_OS" == "macOS" ]] && [[ -f src/assets/logo.icns ]]; then
+            ICON_ARG="--icon src/assets/logo.icns"
+          elif [[ -f src/assets/logo.ico ]]; then
+            ICON_ARG="--icon src/assets/logo.ico"
+          fi
+          python -m PyInstaller --clean --noconfirm ${{ matrix.windowed }} \
+            src/main.py \
+            --name "PS_MultiInjector-$VERSION" \
+            --paths src \
+            --add-data "src/assets/logo.png${SEP}assets" \
+            --add-data "src/lang${SEP}lang" \
+            --add-data "src/assets/logo.ico${SEP}assets" \
+            $ICON_ARG
