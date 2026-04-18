@@ -121,11 +121,7 @@ jobs:
             sha256sum "$OUTDIR.tar.gz" > "$OUTDIR.tar.gz.sha256"
             echo "$(sha256sum "$OUTDIR.tar.gz")" >> checksums.txt
           else
-            OUTDIR="$OUTDIR" python -c "import hashlib, pathlib, zipfile, os; outdir=pathlib.Path(os.environ['OUTDIR']); zip_path=pathlib.Path(f'{outdir}.zip');
-with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-    [zf.write(path, path.as_posix()) for path in outdir.rglob('*')];
-digest=hashlib.sha256(zip_path.read_bytes()).hexdigest(); line=f'{digest}  {zip_path.name}\\n'; pathlib.Path(f'{zip_path}.sha256').write_text(line, encoding='utf-8');
-with pathlib.Path('checksums.txt').open('a', encoding='utf-8') as f: f.write(line)"
+            OUTDIR="$OUTDIR" python -c "import hashlib,pathlib,zipfile,os; outdir=pathlib.Path(os.environ['OUTDIR']); zip_path=pathlib.Path(f'{outdir}.zip'); zf=zipfile.ZipFile(zip_path,'w',zipfile.ZIP_DEFLATED); [zf.write(p,p.as_posix()) for p in outdir.rglob('*')]; zf.close(); digest=hashlib.sha256(zip_path.read_bytes()).hexdigest(); line=f'{digest}  {zip_path.name}\\n'; pathlib.Path(f'{zip_path}.sha256').write_text(line,encoding='utf-8'); pathlib.Path('checksums.txt').open('a',encoding='utf-8').write(line)"
           fi
 
       - name: Package source code
@@ -151,11 +147,7 @@ with pathlib.Path('checksums.txt').open('a', encoding='utf-8') as f: f.write(lin
             sha256sum "$SRC_ZIP" > "$SRC_ZIP.sha256"
             echo "$(sha256sum "$SRC_ZIP")" >> checksums.txt
           else
-            SRC_ZIP="$SRC_ZIP" python -c "import hashlib, fnmatch, pathlib, zipfile, os; zip_path=pathlib.Path(os.environ['SRC_ZIP']); excludes=['*.git*','dist/*','build/*','__pycache__/*','*.pyc','*.pyo','*.pytest_cache/*','.build_local/*','.venv/*','artifacts/*','release_files/*'];
-with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-    [zf.write(path, rel) for path in pathlib.Path('.').rglob('*') for rel in [path.as_posix()] if not any(fnmatch.fnmatch(rel, p) for p in excludes)];
-digest=hashlib.sha256(zip_path.read_bytes()).hexdigest(); line=f'{digest}  {zip_path.name}\\n'; pathlib.Path(f'{zip_path}.sha256').write_text(line, encoding='utf-8');
-with pathlib.Path('checksums.txt').open('a', encoding='utf-8') as f: f.write(line)"
+            SRC_ZIP="$SRC_ZIP" python -c "import hashlib,fnmatch,pathlib,zipfile,os; zip_path=pathlib.Path(os.environ['SRC_ZIP']); excludes=['*.git*','dist/*','build/*','__pycache__/*','*.pyc','*.pyo','*.pytest_cache/*','.build_local/*','.venv/*','artifacts/*','release_files/*']; zf=zipfile.ZipFile(zip_path,'w',zipfile.ZIP_DEFLATED); [zf.write(p,rel) for p in pathlib.Path('.').rglob('*') for rel in [p.as_posix()] if not any(fnmatch.fnmatch(rel,pat) for pat in excludes)]; zf.close(); digest=hashlib.sha256(zip_path.read_bytes()).hexdigest(); line=f'{digest}  {zip_path.name}\\n'; pathlib.Path(f'{zip_path}.sha256').write_text(line,encoding='utf-8'); pathlib.Path('checksums.txt').open('a',encoding='utf-8').write(line)"
           fi
 
       - name: Upload artifact
