@@ -118,9 +118,24 @@ jobs:
             sha256sum "$OUTDIR.tar.gz" > "$OUTDIR.tar.gz.sha256"
             echo "$(sha256sum "$OUTDIR.tar.gz")" >> checksums.txt
           else
-            zip -r "$OUTDIR.zip" "$OUTDIR"
-            shasum -a 256 "$OUTDIR.zip" > "$OUTDIR.zip.sha256"
-            echo "$(shasum -a 256 "$OUTDIR.zip")" >> checksums.txt
+            python - <<PY
+            import hashlib
+            import pathlib
+            import zipfile
+
+            outdir = pathlib.Path("$OUTDIR")
+            zip_path = pathlib.Path(f"{outdir}.zip")
+
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for path in outdir.rglob("*"):
+                    zf.write(path, path.as_posix())
+
+            digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+            line = f"{digest}  {zip_path.name}\n"
+            pathlib.Path(f"{zip_path}.sha256").write_text(line, encoding="utf-8")
+            with pathlib.Path("checksums.txt").open("a", encoding="utf-8") as f:
+                f.write(line)
+            PY
           fi
 
       - name: Package source code
@@ -129,25 +144,57 @@ jobs:
           VERSION=${{ steps.get_version.outputs.version }}
           SRC_ZIP="PS_MultiInjector-$VERSION-source.zip"
 
-          zip -r "$SRC_ZIP" . \
-            -x "*.git*" \
-            -x "dist/*" \
-            -x "build/*" \
-            -x "__pycache__/*" \
-            -x "*.pyc" \
-            -x "*.pyo" \
-            -x "*.pytest_cache/*" \
-            -x ".build_local/*" \
-            -x ".venv/*" \
-            -x "artifacts/*" \
-            -x "release_files/*"
-
           if [[ "$RUNNER_OS" == "Linux" ]]; then
+            zip -r "$SRC_ZIP" . \
+              -x "*.git*" \
+              -x "dist/*" \
+              -x "build/*" \
+              -x "__pycache__/*" \
+              -x "*.pyc" \
+              -x "*.pyo" \
+              -x "*.pytest_cache/*" \
+              -x ".build_local/*" \
+              -x ".venv/*" \
+              -x "artifacts/*" \
+              -x "release_files/*"
+
             sha256sum "$SRC_ZIP" > "$SRC_ZIP.sha256"
             echo "$(sha256sum "$SRC_ZIP")" >> checksums.txt
           else
-            shasum -a 256 "$SRC_ZIP" > "$SRC_ZIP.sha256"
-            echo "$(shasum -a 256 "$SRC_ZIP")" >> checksums.txt
+            python - <<PY
+            import hashlib
+            import fnmatch
+            import pathlib
+            import zipfile
+
+            zip_path = pathlib.Path("$SRC_ZIP")
+            excludes = [
+              "*.git*",
+              "dist/*",
+              "build/*",
+              "__pycache__/*",
+              "*.pyc",
+              "*.pyo",
+              "*.pytest_cache/*",
+              ".build_local/*",
+              ".venv/*",
+              "artifacts/*",
+              "release_files/*",
+            ]
+
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+              for path in pathlib.Path(".").rglob("*"):
+                rel = path.as_posix()
+                if any(fnmatch.fnmatch(rel, pattern) for pattern in excludes):
+                  continue
+                zf.write(path, rel)
+
+            digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+            line = f"{digest}  {zip_path.name}\n"
+            pathlib.Path(f"{zip_path}.sha256").write_text(line, encoding="utf-8")
+            with pathlib.Path("checksums.txt").open("a", encoding="utf-8") as f:
+              f.write(line)
+            PY
           fi
 
       - name: Upload artifact
