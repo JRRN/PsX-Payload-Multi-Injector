@@ -103,13 +103,13 @@ class MainImportBootstrapTests(unittest.TestCase):
         app._is_loading_payloads = False
         app.cmb_ps4 = Mock()
         app.cmb_ps5 = Mock()
-        app.cmb_ps4.current.return_value = 0
-        app.cmb_ps5.current.return_value = 0
+        app.cmb_ps4.currentIndex.return_value = 0
+        app.cmb_ps5.currentIndex.return_value = 0
         app.btn_inject = Mock()
 
         app.update_send_button_state()
 
-        app.btn_inject.config.assert_called_once_with(state='normal', style='Disabled.TButton')
+        app.btn_inject.setEnabled.assert_called_once_with(False)
 
     def test_update_send_button_state_uses_primary_style_with_payload(self):
         app = main.App.__new__(main.App)
@@ -117,29 +117,49 @@ class MainImportBootstrapTests(unittest.TestCase):
         app._is_loading_payloads = False
         app.cmb_ps4 = Mock()
         app.cmb_ps5 = Mock()
-        app.cmb_ps4.current.return_value = 1
-        app.cmb_ps5.current.return_value = 0
+        app.cmb_ps4.currentIndex.return_value = 1
+        app.cmb_ps5.currentIndex.return_value = 0
         app.btn_inject = Mock()
 
         app.update_send_button_state()
 
-        app.btn_inject.config.assert_called_once_with(state='normal', style='TButton')
+        app.btn_inject.setEnabled.assert_called_once_with(True)
 
-    def test_raw_ip_value_returns_empty_when_placeholder_is_active(self):
+    def test_validated_endpoint_returns_tuple_and_persists_ip(self):
         app = main.App.__new__(main.App)
-        app.ip_placeholder = "0.0.0.0"
+        app.endpoint_validator = Mock(return_value=("192.168.0.10", 9020, None))
         app.txt_ip = Mock()
-        app.txt_ip.get.return_value = "0.0.0.0"
+        app.txt_port = Mock()
+        app.txt_ip.text.return_value = " 192.168.0.10 "
+        app.txt_port.text.return_value = "9020"
+        app.config_manager = Mock()
+        app.lang_manager = Mock()
 
-        self.assertEqual(app._raw_ip_value(), "")
+        with patch("src.services.app_service.QMessageBox.critical") as critical:
+            ip, port = app._validated_endpoint_or_show_error()
 
-    def test_raw_ip_value_returns_trimmed_ip_when_user_entered_value(self):
+        self.assertEqual((ip, port), ("192.168.0.10", 9020))
+        app.endpoint_validator.assert_called_once_with("192.168.0.10", "9020")
+        app.config_manager.set_ip.assert_called_once_with("192.168.0.10")
+        critical.assert_not_called()
+
+    def test_validated_endpoint_shows_error_and_returns_none(self):
         app = main.App.__new__(main.App)
-        app.ip_placeholder = "0.0.0.0"
+        app.endpoint_validator = Mock(return_value=(None, None, "error_invalid_ip"))
         app.txt_ip = Mock()
-        app.txt_ip.get.return_value = " 192.168.0.10 "
+        app.txt_port = Mock()
+        app.txt_ip.text.return_value = "not-an-ip"
+        app.txt_port.text.return_value = "9020"
+        app.config_manager = Mock()
+        app.lang_manager = Mock()
+        app.lang_manager.t.return_value = "Invalid IP"
 
-        self.assertEqual(app._raw_ip_value(), "192.168.0.10")
+        with patch("src.services.app_service.QMessageBox.critical") as critical:
+            ip, port = app._validated_endpoint_or_show_error()
+
+        self.assertEqual((ip, port), (None, None))
+        critical.assert_called_once_with(app, "Error", "Invalid IP")
+        app.config_manager.set_ip.assert_not_called()
 
     def test_layout_metrics_for_compact_header_to_inputs_spacing(self):
         layout = main.LAYOUT_METRICS
