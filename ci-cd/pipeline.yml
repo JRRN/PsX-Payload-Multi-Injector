@@ -1,0 +1,220 @@
+name: Test, Build and Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install uv
+      - run: uv pip install --system -r requirements-test.txt
+      - run: python -m pytest tests -v
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_suffix: windows
+            windowed: ""
+          - os: macos-latest
+            artifact_suffix: macos-arm64
+            windowed: "--windowed"
+          - os: macos-13
+            artifact_suffix: macos-x86_64
+            windowed: "--windowed"
+          - os: ubuntu-20.04
+            artifact_suffix: linux
+            windowed: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Linux Qt deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 \
+            libxcb-cursor0 \
+            libxkbcommon-x11-0 \
+            libegl1
+
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(python -c "from src.models.version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build executable (one-folder)
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            SEP=";"
+          else
+            SEP=":"
+          fi
+          ICON_ARG=""
+          if [[ "$RUNNER_OS" == "macOS" ]] && [[ -f src/assets/logo.icns ]]; then
+            ICON_ARG="--icon src/assets/logo.icns"
+          elif [[ -f src/assets/logo.ico ]]; then
+            ICON_ARG="--icon src/assets/logo.ico"
+          fi
+          python -m PyInstaller --clean --noconfirm ${{ matrix.windowed }} \
+            src/main.py \
+            --name "PS_MultiInjector-$VERSION" \
+            --paths src \
+            --add-data "src/assets/logo.png${SEP}assets" \
+            --add-data "src/lang${SEP}lang" \
+            --add-data "src/assets/logo.ico${SEP}assets" \
+            $ICON_ARG
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          OUTDIR="PS_MultiInjector-$VERSION-${{ matrix.artifact_suffix }}"
+
+          mkdir "$OUTDIR"
+          cp -r dist/PS_MultiInjector-$VERSION/* "$OUTDIR"/
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            tar -czf "$OUTDIR.tar.gz" "$OUTDIR"
+            sha256sum "$OUTDIR.tar.gz" > "$OUTDIR.tar.gz.sha256"
+            echo "$(sha256sum "$OUTDIR.tar.gz")" >> checksums.txt
+          else
+            zip -r "$OUTDIR.zip" "$OUTDIR"
+            shasum -a 256 "$OUTDIR.zip" > "$OUTDIR.zip.sha256"
+            echo "$(shasum -a 256 "$OUTDIR.zip")" >> checksums.txt
+          fi
+
+      - name: Package source code
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          SRC_ZIP="PS_MultiInjector-$VERSION-source.zip"
+
+          zip -r "$SRC_ZIP" . \
+            -x "*.git*" \
+            -x "dist/*" \
+            -x "build/*" \
+            -x "__pycache__/*" \
+            -x "*.pyc" \
+            -x "*.pyo" \
+            -x "*.pytest_cache/*" \
+            -x ".build_local/*" \
+            -x ".venv/*" \
+            -x "artifacts/*" \
+            -x "release_files/*"
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sha256sum "$SRC_ZIP" > "$SRC_ZIP.sha256"
+            echo "$(sha256sum "$SRC_ZIP")" >> checksums.txt
+          else
+            shasum -a 256 "$SRC_ZIP" > "$SRC_ZIP.sha256"
+            echo "$(shasum -a 256 "$SRC_ZIP")" >> checksums.txt
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
+          path: |
+            *.zip
+            *.tar.gz
+            *.sha256
+            checksums.txt
+
+  version-bump:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Bump version
+        id: bump
+        run: |
+          python ci-cd/bump_version.py
+          VERSION=$(python -c "from src.models.version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Commit version bump
+        if: steps.check.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/models/version.py CHANGELOG.md
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}"
+      - name: Push changes
+        if: steps.check.outputs.has_changes == 'true'
+        run: git push origin main
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, version-bump]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(python3 -c "from src.models.version import __version__; print(__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_files/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: PS MultiInjector v${{ steps.get_version.outputs.version }}
+          files: |
+            release_files/**/*.{zip,tar.gz}
+            release_files/**/*.{sha256}
+            release_files/**/checksums.txt
+          generate_release_notes: true
+          make_latest: true

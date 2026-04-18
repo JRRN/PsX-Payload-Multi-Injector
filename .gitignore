@@ -11,6 +11,7 @@ venv/
 env/
 .venv/
 ENV/
+.build_local/
 
 # Distribution / packaging
 build/
@@ -80,3 +81,6 @@ Thumbs.db
 .uv_cache/
 .uv_build/
 .uv_wheels/
+
+# Spec files
+*.spec
