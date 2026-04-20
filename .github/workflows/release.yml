@@ -56,7 +56,7 @@ jobs:
       - name: Bump version
         id: bump
         run: |
-          python ci-cd/bump_version.py
+          python build_local/bump_version.py
           VERSION=$(python -c "from src.models.version import __version__; print(__version__)")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
       - name: Check for changes

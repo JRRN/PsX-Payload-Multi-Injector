@@ -1,6 +1,6 @@
 # PS MultiInjector
 
-![version](https://img.shields.io/badge/version-1.1.0-blue)
+![version](https://img.shields.io/badge/version-1.0.0-blue)
 
 [Ver changelog](./CHANGELOG.md)
 
@@ -16,7 +16,7 @@ Injetor multiplataforma de payloads para PS4/PS5 em Python com interface gráfic
 - Resolução automática do Socat com cache, PATH do sistema e URLs opcionais
 - Configuração com pydantic-settings
 
-## Novidade na versão 1.1.0
+## Novidade na versão 1.0.0
 - Pipeline de estilos renovado com QSS para uma UI mais consistente entre plataformas.
 - Ajustes de testes para execução headless com Qt (`QT_QPA_PLATFORM=offscreen`).
 
@@ -25,7 +25,7 @@ Injetor multiplataforma de payloads para PS4/PS5 em Python com interface gráfic
 1. Clone o repositório e entre na pasta:
    ```sh
    git clone <repo-url>
-   cd PS_MultiInjector/PS_MultiInjector
+   cd PsX-Payload-Multi-Injector
    ```
 2. Instale as dependências (requer Python 3.8+). Você pode usar `uv` (mais rápido) ou `pip`:
 
@@ -97,6 +97,68 @@ type "$env:APPDATA\PS_MultiInjector\Logs\app.log"
 
 Ao executar como bundle compilado (`PyInstaller`), `stdout` e `stderr` também são redirecionados para este arquivo.
 
+## Dependências
+
+### Dependências de Runtime
+- **Python 3.8+** (obrigatório)
+- **PySide6** (framework Qt para a interface gráfica)
+- **socat** (opcional, mas recomendado para injeção de payloads em PS4/PS5)
+   - Sem socat: apenas o método TCP fica disponível
+   - Com socat: métodos TCP e Socat ficam disponíveis
+
+### Instalando o Socat
+
+Socat é uma dependência opcional, mas recomendada para injeção avançada de payloads em PS4/PS5. O app detecta automaticamente sua disponibilidade e desativa o checkbox de Socat quando não está instalado.
+
+**macOS (Intel e Apple Silicon)**
+```bash
+brew install socat
+```
+
+**Linux (Ubuntu/Debian)**
+```bash
+sudo apt install socat
+```
+
+**Linux (Fedora/RHEL)**
+```bash
+sudo dnf install socat
+```
+
+**Linux (Arch)**
+```bash
+sudo pacman -S socat
+```
+
+**Windows**
+Quatro opções:
+1. **WSL (Recomendado)** — Instale o Windows Subsystem for Linux e use os comandos Linux acima
+2. **MSYS2/Cygwin** — Instale via gerenciador de pacotes
+3. **scoop** — `scoop install socat`
+4. **Binário manual** — Veja [SOCAT_MANUAL_SETUP.md](SOCAT_MANUAL_SETUP.md) para instruções por sistema
+
+### Instalação manual do binário
+
+Para colocar manualmente o binário do socat no diretório da aplicação, consulte [SOCAT_MANUAL_SETUP.md](SOCAT_MANUAL_SETUP.md).
+
+**Caminhos rápidos:**
+- **macOS:** `~/Library/Application Support/PS_MultiInjector/socat/`
+- **Windows:** `%APPDATA%\PS_MultiInjector\socat\`
+- **Linux:** `~/.local/share/PS_MultiInjector/socat/`
+
+Se o socat não for encontrado, o app:
+- Mostra instruções de instalação
+- Desativa o checkbox "Enable SOCAT"
+- Continua permitindo injeção via TCP
+
+## Uso do Socat para PS4/PS5
+
+Socat oferece um método alternativo ao TCP para injeção de payloads em consoles PS4/PS5.
+
+Detecção automática no app:
+- Se encontrado: checkbox "Enable SOCAT" ativo
+- Se não encontrado: checkbox desativado com instruções de instalação
+
 ## Fontes do Socat (SO/Arquitetura)
 
 A ordem de resolução do Socat é:
@@ -118,11 +180,13 @@ Notas:
 - URLs públicas antigas de static-binaries para macOS e Windows não são confiáveis e não são usadas por padrão.
 - Você pode sobrescrever URLs via `.env` se controla uma fonte confiável.
 - Binários de Socat em cache ficam no diretório de dados do usuário.
+- Operações com Socat têm timeout configurável (padrão: 30 segundos) para injeção de payloads em PS4/PS5.
 
 ## Notas
 - O seletor de idioma usa bandeiras Unicode via `open_flags` (sem imagens locais).
 - É possível adicionar novos idiomas criando JSON em `src/lang`.
 - É necessária conexão com internet para baixar a lista de payloads e binários externos do Socat.
+- A lista de payloads deve estar em JSON com seções `PS4` e/ou `PS5`.
 - Antes do envio, o app valida o formato de IP e o intervalo de porta (1-65535). Tanto a carga inicial de payloads quanto o envio rodam em segundo plano para manter a interface responsiva.
 
 ## Como adicionar um novo idioma
@@ -166,16 +230,11 @@ Para um fluxo de desenvolvimento rápido:
 
 ## Gerar executáveis nativos
 
-Você pode gerar um executável nativo para seu sistema operacional local usando os scripts em `ci-cd/`:
+Você pode gerar um executável nativo para seu sistema operacional local usando os scripts em `build_local/`:
 
-- **Linux ou macOS (Intel ou ARM):**
+- **Linux, macOS ou Windows:**
    ```sh
-   bash ci-cd/build_local.sh
-   ```
-- **Windows:**
-   Execute no CMD ou PowerShell:
-   ```bat
-   ci-cd\build_local.bat
+   python build_local/build_local.py
    ```
 
 Isso irá gerar um executável na pasta `dist/` com nome e versão para sua arquitetura e sistema operacional.
