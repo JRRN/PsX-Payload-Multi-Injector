@@ -39,7 +39,8 @@ jobs:
   build:
     needs: test
     strategy:
-      matrix:
+      max-parallel: 1
+      matrix:  
         include:
           - os: windows-latest
             artifact_suffix: windows
