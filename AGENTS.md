@@ -2,7 +2,7 @@
 
 Cross-platform GUI tool (PySide6/Qt) for injecting payloads into PS4 and PS5 consoles over TCP.
 Supported platforms: Linux, Windows, macOS Intel (x86_64), and macOS ARM (arm64).
-See [README_en.md](README_en.md) for end-user details.
+See [docs/README_en.md](docs/README_en.md) for end-user details.
 
 ## Architecture
 
@@ -63,12 +63,11 @@ watchmedo auto-restart --pattern="*.py" --recursive -- uv run src/main.py
 python -m pytest tests -v
 
 # Build native executables
-bash ci-cd/build_local.sh
-ci-cd\build_local.bat
+python build_local/build_local.py
 
 # Version management (semantic versioning)
-python ci-cd/bump_version.py --dry-run  # Preview version bump
-python ci-cd/bump_version.py             # Apply version bump
+python build_local/bump_version.py --dry-run  # Preview version bump
+python build_local/bump_version.py             # Apply version bump
 ```
 
 See [VERSIONING.md](VERSIONING.md) and [VERSIONING_ES.md](VERSIONING_ES.md) for automatic version management during CI/CD builds.
@@ -85,10 +84,10 @@ This section is mandatory for all code-writing agents working in this repository
 	 - For headless contexts: run python -c "import src.main" as import-level smoke check.
    - These checks are mandatory by default for every applicable code change; do not wait for the user to request them.
 5. The agent must review and update relevant README documentation:
-   - If the change affects user-facing behavior, update [README_en.md](README_en.md) or [README.md](README.md).
+	- If the change affects user-facing behavior, update [docs/README_en.md](docs/README_en.md) or [README.md](README.md).
    - If the change affects development/build process, update relevant sections in [AGENTS.md](AGENTS.md).
    - If no documentation update is needed, briefly note why in the final report.
-	- All language readmes must stay aligned: [README.md](README.md), [README_en.md](README_en.md), [README_pt.md](README_pt.md), [README_zh.md](README_zh.md), and [README_ko.md](README_ko.md).
+	- All language readmes must stay aligned: [README.md](README.md), [docs/README_en.md](docs/README_en.md), [docs/README_pt.md](docs/README_pt.md), [docs/README_zh.md](docs/README_zh.md), and [docs/README_ko.md](docs/README_ko.md).
 	- When behavior/build/docs change, update all readmes above in the same task.
 	- Language files must stay aligned: [src/lang/es-es.json](src/lang/es-es.json), [src/lang/en-us.json](src/lang/en-us.json), [src/lang/pt-pt.json](src/lang/pt-pt.json), [src/lang/zh-cn.json](src/lang/zh-cn.json), and [src/lang/ko-kr.json](src/lang/ko-kr.json).
 	- When adding, removing, or renaming translation keys, update all language JSON files above in the same task.
@@ -155,14 +154,14 @@ The project uses **Semantic Versioning** with automatic version bumping during C
 
 - Each push to `main` triggers the pipeline to analyze commits
 - Commits using conventional format trigger version bumps:
-  - `feat:` → minor bump (1.0.0 → 1.1.0)
-  - `fix:` → patch bump (1.0.0 → 1.0.1)
-  - `breaking:` → major bump (1.0.0 → 2.0.0)
+	- `feat:` → minor bump (for example: `X.Y.Z` → `X.(Y+1).0`)
+	- `fix:` → patch bump (for example: `X.Y.Z` → `X.Y.(Z+1)`)
+	- `breaking:` → major bump (for example: `X.Y.Z` → `(X+1).0.0`)
   - `docs:`, `chore:`, `test:` → no bump
 - Version bumping pipeline automatically:
   - Updates `src/models/version.py`
-  - Updates `CHANGELOG.md`
-  - Creates git tags (e.g., `v1.1.0`)
+	- Updates `docs/CHANGELOG.md`
+	- Creates git tags (e.g., `v1.0.0`)
   - Builds executables with new version
   - Creates GitHub Release
 
@@ -171,13 +170,13 @@ For details and examples, see [VERSIONING.md](VERSIONING.md) (English) or [VERSI
 Local testing:
 ```sh
 # Preview version bump without changes
-python ci-cd/bump_version.py --dry-run
+python build_local/bump_version.py --dry-run
 
 # Apply version bump locally
-python ci-cd/bump_version.py
+python build_local/bump_version.py
 
 # Show version bump demonstration
-bash ci-cd/demo_version.sh
+bash build_local/demo_version.sh
 ```
 
 ## SOLID Requirement

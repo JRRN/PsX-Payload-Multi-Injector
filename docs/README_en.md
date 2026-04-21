@@ -1,6 +1,6 @@
 # PS MultiInjector
 
-![version](https://img.shields.io/badge/version-1.1.0-blue)
+![version](https://img.shields.io/badge/version-1.0.0-blue)
 
 [View changelog](./CHANGELOG.md)
 
@@ -16,7 +16,7 @@ Cross-platform payload injector for PS4/PS5 in Python with a graphical interface
 - Socat auto-resolution with cache, system PATH, and optional URL overrides
 - Configuration with pydantic-settings
 
-## New in 1.1.0
+## New in 1.0.0
 - Refreshed styling pipeline using QSS for a more consistent cross-platform UI.
 - Test setup improvements for headless Qt execution (`QT_QPA_PLATFORM=offscreen`).
 
@@ -25,7 +25,7 @@ Cross-platform payload injector for PS4/PS5 in Python with a graphical interface
 1. Clone the repository and enter the folder:
    ```sh
    git clone <repo-url>
-   cd PS_MultiInjector/PS_MultiInjector
+   cd PsX-Payload-Multi-Injector
    ```
 2. Install dependencies (requires Python 3.8+). You can use `uv` (faster) or `pip`:
    
@@ -131,7 +131,7 @@ sudo pacman -S socat
 ```
 
 **Windows**
-Three options:
+Four options:
 1. **WSL (Recommended)** — Install Windows Subsystem for Linux, then use Linux commands above
 2. **MSYS2/Cygwin** — Install via package manager
 3. **scoop** — `scoop install socat`
@@ -189,6 +189,7 @@ Notes:
 - The language selector uses real Unicode flags thanks to the `open_flags` package (no local images required).
 - You can add more languages by creating JSON files in `src/lang`.
 - Internet connection is required to download the payload list and any externally fetched Socat binary.
+- The payload list must be JSON with `PS4` and/or `PS5` sections.
 - Before sending, the app validates IP format and port range (1-65535). Both initial payload loading and payload sending run asynchronously to keep the UI responsive.
 
 ## How to add a new language
@@ -234,17 +235,12 @@ This will restart the app every time you modify any `.py` file in the project.
 
 ## Building native executables
 
-You can generate a native executable for your operating system locally using the scripts in `ci-cd/`:
+You can generate a native executable for your operating system locally using the scripts in `build_local/`:
 
-- **Linux or macOS (Intel or ARM):**
-  ```sh
-  bash ci-cd/build_local.sh
-  ```
-- **Windows:**
-  Run in CMD or PowerShell:
-  ```bat
-  ci-cd\build_local.bat
-  ```
+- **Linux, macOS, or Windows:**
+   ```sh
+   python build_local/build_local.py
+   ```
 
 This will generate an executable in the `dist/` folder with the name and version for your architecture and OS. You must run the script on each platform to get the native binary for that architecture (no universal binaries are generated).
 

@@ -7,10 +7,15 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      max-parallel: 1
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -34,7 +39,8 @@ jobs:
   build:
     needs: test
     strategy:
-      matrix:
+      max-parallel: 1
+      matrix:  
         include:
           - os: windows-latest
             artifact_suffix: windows

@@ -31,13 +31,20 @@ class PayloadCatalogService:
 
         try:
             data = response.json()
-            if isinstance(data, dict) and ("PS4" in data or "PS5" in data):
-                logger.debug("Payload response parsed as JSON")
-                return self._from_json(data)
-        except Exception:
-            logger.debug("Payload response is not JSON format, trying legacy text")
+        except Exception as exc:
+            logger.error("Payload response is not valid JSON: %s", exc)
+            raise PayloadCatalogNetworkError("Payload catalog must be valid JSON") from exc
 
-        return self._from_legacy_text(getattr(response, "text", ""))
+        if not isinstance(data, dict):
+            logger.error("Payload response has invalid JSON root type: %s", type(data).__name__)
+            raise PayloadCatalogNetworkError("Payload catalog JSON must be an object")
+
+        if not ("PS4" in data or "PS5" in data):
+            logger.error("Payload JSON missing PS4/PS5 keys")
+            raise PayloadCatalogNetworkError("Payload catalog JSON must contain PS4 or PS5 sections")
+
+        logger.debug("Payload response parsed as JSON")
+        return self._from_json(data)
 
     def _from_json(self, data):
         ps4_payloads = []
@@ -65,33 +72,3 @@ class PayloadCatalogService:
 
         return ps4_payloads, ps5_payloads
 
-    def _from_legacy_text(self, payloads_text):
-        ps4_payloads = []
-        ps5_payloads = []
-        current_name = None
-
-        for raw_line in payloads_text.splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-
-            if "|" not in line:
-                current_name = line
-                continue
-
-            parts = [part.strip() for part in line.split("|")]
-            if len(parts) != 4:
-                continue
-
-            name_token, url, port, platform = parts
-            name = current_name if name_token == "payload-name-placeholder" and current_name else name_token
-
-            payload = Payload(name=name, url=url, platform=platform, port=port)
-            if platform.upper() == "PS5":
-                ps5_payloads.append(payload)
-            elif platform.upper() == "PS4":
-                ps4_payloads.append(payload)
-
-        logger.info("Loaded %d PS4 and %d PS5 payloads (legacy)", len(ps4_payloads), len(ps5_payloads))
-
-        return ps4_payloads, ps5_payloads

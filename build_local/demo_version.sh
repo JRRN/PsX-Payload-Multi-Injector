@@ -19,7 +19,7 @@ echo ""
 
 # Run dry-run to show what would happen
 echo "🔍 Testing version bump (dry-run)..."
-python3 ci-cd/bump_version.py --dry-run
+python3 build_local/bump_version.py --dry-run
 echo ""
 
 # Explain the result

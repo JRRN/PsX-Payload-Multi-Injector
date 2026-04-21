@@ -1,6 +1,6 @@
 # PS MultiInjector
 
-![version](https://img.shields.io/badge/version-1.1.0-blue)
+![version](https://img.shields.io/badge/version-1.0.0-blue)
 
 [Ver changelog](./docs/CHANGELOG.md)
 
@@ -16,7 +16,7 @@ Inyector multiplataforma de payloads para PS4/PS5 en Python con interfaz gráfic
 - Resolución automática de Socat con caché, PATH del sistema y URLs opcionales
 - Configuración con pydantic-settings
 
-## Novedad de la versión 1.1.0
+## Novedad de la versión 1.0.0
 - Sistema de estilos renovado usando QSS para una UI más consistente entre plataformas.
 - Ajustes de pruebas para ejecución headless con Qt (`QT_QPA_PLATFORM=offscreen`).
 
@@ -25,7 +25,7 @@ Inyector multiplataforma de payloads para PS4/PS5 en Python con interfaz gráfic
 1. Clona el repositorio y entra en la carpeta:
    ```sh
    git clone <repo-url>
-   cd PS_MultiInjector/PS_MultiInjector
+   cd PsX-Payload-Multi-Injector
    ```
 2. Instala las dependencias (requiere Python 3.8+). Puedes usar `uv` (más rápido) o `pip`:
    
@@ -131,7 +131,7 @@ sudo pacman -S socat
 ```
 
 **Windows**
-Tres opciones:
+Cuatro opciones:
 1. **WSL (Recomendado)** — Instala Windows Subsystem for Linux, luego usa los comandos Linux anteriores
 2. **MSYS2/Cygwin** — Instala vía el gestor de paquetes
 3. **scoop** — `scoop install socat`
@@ -189,6 +189,7 @@ Notas:
 - El selector de idioma usa banderas Unicode reales gracias al paquete `open_flags` (no requiere imágenes locales).
 - Puedes agregar más idiomas creando archivos JSON en `src/lang`.
 - Requiere conexión a internet para descargar la lista de payloads y cualquier binario de Socat obtenido externamente.
+- La lista de payloads debe estar en formato JSON con secciones `PS4` y/o `PS5`.
 - Antes de enviar, la app valida el formato de IP y el rango de puerto (1-65535). Tanto la carga inicial de payloads como los envíos se ejecutan en segundo plano para mantener la interfaz fluida.
 
 ## Cómo agregar un nuevo idioma
@@ -234,17 +235,12 @@ Esto reiniciará la app cada vez que modifiques cualquier archivo `.py` en el pr
 
 ## Generar ejecutables nativos
 
-Puedes generar un ejecutable para tu sistema operativo localmente usando los scripts en `ci-cd/`:
+Puedes generar un ejecutable para tu sistema operativo localmente usando los scripts en `build_local/`:
 
-- **Linux o macOS (Intel o ARM):**
-  ```sh
-  bash ci-cd/build_local.sh
-  ```
-- **Windows:**
-  Ejecuta en CMD o PowerShell:
-  ```bat
-  ci-cd\build_local.bat
-  ```
+- **Linux, macOS o Windows:**
+   ```sh
+   python build_local/build_local.py
+   ```
 
 Esto generará un ejecutable en la carpeta `dist/` con el nombre y versión correspondiente a tu arquitectura y sistema. Debes ejecutar el script en cada plataforma para obtener el binario nativo de esa arquitectura (no se generan binarios universales).
 

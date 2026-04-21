@@ -10,7 +10,7 @@ Commit message format (Conventional Commits):
 - docs, style, chore, test: no bump
 
 Usage:
-  python ci-cd/bump_version.py [--dry-run]
+    python build_local/bump_version.py [--dry-run]
 """
 
 import re

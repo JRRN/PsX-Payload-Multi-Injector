@@ -6,9 +6,9 @@ This guide explains how automatic version bumping works in PS MultiInjector.
 
 The project uses **Semantic Versioning** (SemVer) with automatic version bumping based on conventional commit messages:
 
-- **Patch bumps** (`1.0.0` → `1.0.1`): Bug fixes (`fix:` prefix)
-- **Minor bumps** (`1.0.0` → `1.1.0`): New features (`feat:` prefix)  
-- **Major bumps** (`1.0.0` → `2.0.0`): Breaking changes (`breaking:` prefix)
+- **Patch bumps** (`X.Y.Z` → `X.Y.(Z+1)`): Bug fixes (`fix:` prefix)
+- **Minor bumps** (`X.Y.Z` → `X.(Y+1).0`): New features (`feat:` prefix)  
+- **Major bumps** (`X.Y.Z` → `(X+1).0.0`): Breaking changes (`breaking:` prefix)
 
 ## How It Works
 
@@ -32,9 +32,9 @@ When you push to `main`:
 2. **Version check** analyzes commits since last release
 3. **If version-relevant commits found:**
    - Version is bumped in `src/models/version.py`
-   - CHANGELOG.md is updated with new entry
+    - `docs/CHANGELOG.md` is updated with new entry
    - Changes are committed to `main`
-   - Git tag is created (e.g., `v1.1.0`)
+    - Git tag is created (e.g., `v1.0.0`)
 4. **Build step** uses the updated version for executables
 5. **Release job** publishes GitHub Release with new version
 
@@ -80,31 +80,31 @@ To test version bumping locally before pushing:
 
 ```bash
 # Dry run - shows what would happen
-python ci-cd/bump_version.py --dry-run
+python build_local/bump_version.py --dry-run
 
 # Actual bump - updates files and creates tag
-python ci-cd/bump_version.py
+python build_local/bump_version.py
 ```
 
 This will:
 - Analyze commits since last git tag
 - Update `src/models/version.py`
-- Update `CHANGELOG.md`
+- Update `docs/CHANGELOG.md`
 - Create a git tag with new version
 
 ## Files Updated by Automatic Versioning
 
 1. **src/models/version.py**
    ```python
-   __version__ = "1.1.0"  # Updated automatically
+    __version__ = "1.0.0"  # Updated automatically
    ```
 
-2. **CHANGELOG.md**
+2. **docs/CHANGELOG.md**
    - New entry added with today's date
    - Commits categorized as Added/Fixed/Breaking Changes
 
 3. **Git tags**
-   - Automatic tag created: `v1.1.0`
+    - Automatic tag created: `v1.0.0`
 
 ## Manual Version Updates
 
@@ -115,7 +115,7 @@ If you need to set a specific version manually:
    __version__ = "2.0.0"
    ```
 
-2. Update `CHANGELOG.md` with your changes
+2. Update `docs/CHANGELOG.md` with your changes
 
 3. Create a tag:
    ```bash
@@ -169,7 +169,7 @@ git push origin main
 
 # GitHub Actions:
 # → Detects 2 "fix:" commits
-# → Bumps: 1.1.0 → 1.1.1
+# → Bumps: 1.0.0 → 1.0.1
 # → Creates tag: v1.1.1
 # → Releases: PS_MultiInjector-1.1.1-*
 ```
@@ -187,9 +187,9 @@ git push origin main
 
 # GitHub Actions:
 # → Detects "feat:" + "fix:" commits
-# → Bumps: 1.1.0 → 1.2.0 (minor takes precedence)
-# → Creates tag: v1.2.0
-# → Releases: PS_MultiInjector-1.2.0-*
+# → Bumps: X.Y.Z → X.(Y+1).0 (minor takes precedence)
+# → Creates tag: vX.(Y+1).0
+# → Releases: PS_MultiInjector-X.(Y+1).0-*
 ```
 
 ### Scenario 3: Breaking Changes
@@ -204,7 +204,7 @@ git push origin main
 
 # GitHub Actions:
 # → Detects "breaking:" commit
-# → Bumps: 1.1.0 → 2.0.0
+# → Bumps: 1.0.0 → 2.0.0
 # → Creates tag: v2.0.0
 # → Releases: PS_MultiInjector-2.0.0-*
 ```
@@ -220,7 +220,7 @@ git push origin main
 
 Use `--dry-run` locally to test:
 ```bash
-python ci-cd/bump_version.py --dry-run
+python build_local/bump_version.py --dry-run
 ```
 
 ### Git tag already exists
@@ -235,7 +235,7 @@ The `softprops/action-gh-release` action uses conventional commits to auto-gener
 
 ### Changing Version Bump Rules
 
-Edit `ci-cd/bump_version.py`:
+Edit `build_local/bump_version.py`:
 
 - `analyze_commits()` function - modify detection logic
 - `parse_version()` - change version format (currently SemVer)
@@ -245,7 +245,7 @@ Edit `ci-cd/bump_version.py`:
 
 If you want to disable version auto-bumping:
 
-1. Comment out the `version-bump` job in `ci-cd/pipeline.yml`
+1. Comment out the `version-bump` job in `.github/workflows/release.yml`
 2. Manually update `src/models/version.py` when releasing
 
 ### Using Different Bump Strategy
@@ -259,10 +259,10 @@ To use incremental bumping (always patch):
 
 ## Related Files
 
-- `ci-cd/bump_version.py` - Version bumping script
-- `ci-cd/pipeline.yml` - GitHub Actions workflow
+- `build_local/bump_version.py` - Version bumping script
+- `.github/workflows/release.yml` - GitHub Actions release workflow
 - `src/models/version.py` - Current version source
-- `CHANGELOG.md` - Version history
+- `docs/CHANGELOG.md` - Version history
 
 ## Learn More
 
@@ -283,5 +283,5 @@ Use `git tag -l` to see all version tags:
 
 ```bash
 git tag -l
-# v1.0.0, v1.1.0, v1.2.0, etc.
+# vX.Y.Z ...
 ```
