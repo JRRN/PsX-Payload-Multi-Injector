@@ -2,7 +2,7 @@ name: Release
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
+ 
 on:
   push:
     branches: [main]
@@ -130,6 +130,17 @@ jobs:
           VERSION=$(python -c "from src.models.version import __version__; print(__version__)")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Free up disk space
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get clean
+            sudo apt-get autoclean
+            sudo apt-get autoremove
+            docker rmi $(docker image ls -aq) 2>/dev/null || true
+            rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          fi
+
       - name: Build executable (one-folder)
         shell: bash
         run: |
@@ -172,6 +183,11 @@ jobs:
           else
             OUTDIR="$OUTDIR" python -c "import hashlib,pathlib,zipfile,os; outdir=pathlib.Path(os.environ['OUTDIR']); zip_path=pathlib.Path(f'{outdir}.zip'); zf=zipfile.ZipFile(zip_path,'w',zipfile.ZIP_DEFLATED); [zf.write(p,p.as_posix()) for p in outdir.rglob('*')]; zf.close(); digest=hashlib.sha256(zip_path.read_bytes()).hexdigest(); line=f'{digest}  {zip_path.name}\\n'; pathlib.Path(f'{zip_path}.sha256').write_text(line,encoding='utf-8'); pathlib.Path('checksums.txt').open('a',encoding='utf-8').write(line)"
           fi
+
+      - name: Clean up build directories
+        shell: bash
+        run: |
+          rm -rf dist/ build/ .PyInstaller/ __pycache__ src/__pycache__ src/*/__pycache__
 
       - name: Package source code
         shell: bash
