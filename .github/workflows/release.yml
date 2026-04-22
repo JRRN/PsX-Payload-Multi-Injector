@@ -134,12 +134,40 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
+            # Clean package managers
             sudo apt-get clean
             sudo apt-get autoclean
-            sudo apt-get autoremove
+            sudo apt-get autoremove -y
+            
+            # Remove unnecessary packages
+            sudo apt-get remove -y --purge \
+              build-essential \
+              ghc-* \
+              google-chrome-* \
+              firefox \
+              dotnet-* \
+              powershell \
+              mysql-* \
+              postgresql-* \
+              snap 2>/dev/null || true
+            
+            # Clean caches
+            sudo apt-get clean
+            rm -rf /var/cache/apt/archives
+            
+            # Remove Docker images and cache
             docker rmi $(docker image ls -aq) 2>/dev/null || true
-            rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+            docker system prune -af 2>/dev/null || true
+            
+            # Remove unused system directories
+            rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+            rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
           fi
+          
+          # Clean Python and uv caches (all platforms)
+          pip cache purge 2>/dev/null || true
+          uv cache prune 2>/dev/null || true
+          rm -rf ~/.cache/pip ~/.cache/uv 2>/dev/null || true
 
       - name: Build executable (one-folder)
         shell: bash
@@ -187,7 +215,7 @@ jobs:
       - name: Clean up build directories
         shell: bash
         run: |
-          rm -rf dist/ build/ .PyInstaller/ __pycache__ src/__pycache__ src/*/__pycache__
+          rm -rf dist/ build/ .PyInstaller/ __pycache__ src/__pycache__ src/*/__pycache__ tests/__pycache__ .pytest_cache/
 
       - name: Package source code
         shell: bash
