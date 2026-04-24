@@ -94,7 +94,7 @@ jobs:
           - os: macos-13
             artifact_suffix: macos-x86_64
             windowed: "--windowed"
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             artifact_suffix: linux
             windowed: ""
     runs-on: ${{ matrix.os }}
