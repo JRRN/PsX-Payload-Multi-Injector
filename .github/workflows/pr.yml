@@ -107,7 +107,6 @@ jobs:
             
             # Clean caches
             sudo apt-get clean
-            rm -rf /var/cache/apt/archives
             
             # Remove Docker images and cache
             docker rmi $(docker image ls -aq) 2>/dev/null || true
@@ -121,7 +120,6 @@ jobs:
           # Clean Python and uv caches (all platforms)
           pip cache purge 2>/dev/null || true
           uv cache prune 2>/dev/null || true
-          rm -rf ~/.cache/pip ~/.cache/uv 2>/dev/null || true
 
       - name: Build executable (one-folder)
         shell: bash
