@@ -113,8 +113,8 @@ jobs:
             docker system prune -af 2>/dev/null || true
             
             # Remove unused system directories
-            rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
-            rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
+            rm -rf /usr/share/dotnet 
+  
           fi
           
           # Clean Python and uv caches (all platforms)
