@@ -17,8 +17,7 @@ concurrency:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
-    strategy:
-      max-parallel: 1
+    strategy: 
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -82,7 +81,6 @@ jobs:
   build:
     needs: version-bump
     strategy:
-      max-parallel: 1
       matrix:
         include:
           - os: windows-latest
@@ -91,7 +89,7 @@ jobs:
           - os: macos-latest
             artifact_suffix: macos-arm64
             windowed: "--windowed"
-          - os: macos-13
+          - os: macos-15-intel
             artifact_suffix: macos-x86_64
             windowed: "--windowed"
           - os: ubuntu-latest
@@ -153,15 +151,13 @@ jobs:
             
             # Clean caches
             sudo apt-get clean
-            rm -rf /var/cache/apt/archives
             
             # Remove Docker images and cache
             docker rmi $(docker image ls -aq) 2>/dev/null || true
             docker system prune -af 2>/dev/null || true
             
             # Remove unused system directories
-            rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
-            rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
+            rm -rf /usr/share/dotnet 
           fi
           
           # Clean Python and uv caches (all platforms)
