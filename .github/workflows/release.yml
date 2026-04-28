@@ -203,9 +203,9 @@ jobs:
             HASH_LINE=$(powershell -Command "(Get-FileHash -Algorithm SHA256 \"$OUTDIR\").Hash + '  ' + '$OUTDIR'")
             echo "$HASH_LINE" >> checksums.txt
           elif command -v sha256sum >/dev/null 2>&1; then
-            sha256sum "$OUTDIR"/* >> checksums.txt
+            find "$OUTDIR" -type f -exec sha256sum {} \; >> checksums.txt
           else
-            shasum -a 256 "$OUTDIR"/* >> checksums.txt
+            find "$OUTDIR" -type f -exec shasum -a 256 {} \; >> checksums.txt
           fi
 
       - name: Clean up build directories
@@ -244,9 +244,9 @@ jobs:
             HASH_LINE=$(powershell -Command "(Get-FileHash -Algorithm SHA256 \"$OUTDIR\").Hash + '  ' + '$OUTDIR'")
             echo "$HASH_LINE" >> checksums.txt
           elif command -v sha256sum >/dev/null 2>&1; then
-            sha256sum "$OUTDIR"/* >> checksums.txt
+            find "$OUTDIR" -type f -exec sha256sum {} \; >> checksums.txt
           else
-            shasum -a 256 "$OUTDIR"/* >> checksums.txt
+            find "$OUTDIR" -type f -exec shasum -a 256 {} \; >> checksums.txt
           fi
 
       - name: Upload artifact
