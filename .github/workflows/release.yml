@@ -83,6 +83,7 @@ jobs:
   build:
     needs: version-bump
     strategy:
+      max-parallel: 1
       matrix:
         include:
           - os: windows-latest
@@ -204,31 +205,23 @@ jobs:
           VERSION=${{ steps.get_version.outputs.version }}
           OUTDIR="PS_MultiInjector-$VERSION-${{ matrix.artifact_suffix }}"
 
-          rm -rf "$OUTDIR" "$OUTDIR.zip" "$OUTDIR.tar.gz" "$OUTDIR.zip.sha256" "$OUTDIR.tar.gz.sha256"
+          rm -rf "$OUTDIR" "$OUTDIR.zip" "$OUTDIR.tar.gz" "$OUTDIR.zip.sha256" "$OUTDIR.tar.gz.sha256" checksums.txt
+          : > checksums.txt
           mkdir -p "$OUTDIR"
           cp -r dist/PS_MultiInjector-$VERSION/* "$OUTDIR"/
 
           if [[ "$RUNNER_OS" == "Linux" ]]; then
-            tar -czf "$OUTDIR.tar.gz" "$OUTDIR"
-            sha256sum "$OUTDIR.tar.gz" > "$OUTDIR.tar.gz.sha256"
-            echo "$(sha256sum "$OUTDIR.tar.gz")" >> checksums.txt
+            ARCHIVE="$OUTDIR.tar.gz"
+            tar -czf "$ARCHIVE" "$OUTDIR"
+            sha256sum "$ARCHIVE" | tee "$ARCHIVE.sha256" >> checksums.txt
           else
-            python <<'EOF'
-              import hashlib, pathlib, zipfile, os
-
-              outdir = pathlib.Path("PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}")
-              zip_path = outdir.with_suffix('.zip')
-
-              with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-                  for p in outdir.rglob('*'):
-                      zf.write(p, p.as_posix())
-
-              digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-              line = f"{digest}  {zip_path.name}\n"
-
-              pathlib.Path(f"{zip_path}.sha256").write_text(line)
-              pathlib.Path("checksums.txt").write_text(line)
-              EOF
+            ARCHIVE="$OUTDIR.zip"
+            zip -r "$ARCHIVE" "$OUTDIR"
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$ARCHIVE" | tee "$ARCHIVE.sha256" >> checksums.txt
+            else
+              shasum -a 256 "$ARCHIVE" | tee "$ARCHIVE.sha256" >> checksums.txt
+            fi
           fi
 
       - name: Clean up build directories
@@ -244,31 +237,14 @@ jobs:
 
           rm -f "$SRC_ZIP" "$SRC_ZIP.sha256"
 
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            zip -r "$SRC_ZIP" . \
-              -x "*.git*" "dist/*" "build/*" "__pycache__/*" "*.pyc" "*.pyo" "*.pytest_cache/*" \
-              ".build_local/*" ".venv/*" "artifacts/*" "release_files/*"
-            sha256sum "$SRC_ZIP" > "$SRC_ZIP.sha256"
-            echo "$(sha256sum "$SRC_ZIP")" >> checksums.txt
+          zip -r "$SRC_ZIP" . \
+            -x "*.git*" "dist/*" "build/*" "__pycache__/*" "*.pyc" "*.pyo" "*.pytest_cache/*" \
+            ".build_local/*" ".venv/*" "artifacts/*" "release_files/*"
+
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$SRC_ZIP" | tee "$SRC_ZIP.sha256" >> checksums.txt
           else
-            python <<'EOF'
-              import hashlib, fnmatch, pathlib, zipfile, os
-
-              zip_path = pathlib.Path("PS_MultiInjector-${{ steps.get_version.outputs.version }}-source.zip")
-              excludes = ['*.git*','dist/*','build/*','__pycache__/*','*.pyc','*.pyo','*.pytest_cache/*','.build_local/*','.venv/*','artifacts/*','release_files/*']
-
-              with zipfile.ZipFile(zip_path,'w',zipfile.ZIP_DEFLATED) as zf:
-                  for p in pathlib.Path('.').rglob('*'):
-                      rel = p.as_posix()
-                      if not any(fnmatch.fnmatch(rel,pat) for pat in excludes):
-                          zf.write(p, rel)
-
-              digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-              line = f"{digest}  {zip_path.name}\n"
-
-              pathlib.Path(f"{zip_path}.sha256").write_text(line)
-              pathlib.Path("checksums.txt").write_text(line)
-              EOF
+            shasum -a 256 "$SRC_ZIP" | tee "$SRC_ZIP.sha256" >> checksums.txt
           fi
 
       - name: Upload artifact
