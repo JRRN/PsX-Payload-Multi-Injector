@@ -23,8 +23,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.14'
       - name: Install Linux Qt deps
@@ -48,11 +48,11 @@ jobs:
     outputs:
       version: ${{ steps.bump.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           ref: main
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.14'
       - name: Bump version
@@ -100,11 +100,11 @@ jobs:
             windowed: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           ref: main
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.14'
 
@@ -250,7 +250,7 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
           path: |
@@ -264,18 +264,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.2
 
       - name: Download all packaged artifacts
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@v8.0.1
         with:
           path: release_files/
-
-      - name: List ZIP and TAR.GZ artifacts
-        shell: bash
-        run: |
-          echo "Artifacts found:"
-          find release_files -type f \( -name "*.zip" -o -name "*.tar.gz" \) -print
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -283,7 +277,6 @@ jobs:
           tag_name: v${{ needs.version-bump.outputs.version }}
           name: PS MultiInjector v${{ needs.version-bump.outputs.version }}
           files: |
-            release_files/**/*.zip
-            release_files/**/*.tar.gz
+            release_files/PS_MultiInjector-*
           generate_release_notes: true
           make_latest: true
