@@ -205,23 +205,20 @@ jobs:
           VERSION=${{ steps.get_version.outputs.version }}
           OUTDIR="PS_MultiInjector-$VERSION-${{ matrix.artifact_suffix }}"
 
-          rm -rf "$OUTDIR" "$OUTDIR.zip" "$OUTDIR.tar.gz" "$OUTDIR.zip.sha256" "$OUTDIR.tar.gz.sha256" checksums.txt
-          : > checksums.txt
+          rm -rf "$OUTDIR"
           mkdir -p "$OUTDIR"
+
           cp -r dist/PS_MultiInjector-$VERSION/* "$OUTDIR"/
 
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            ARCHIVE="$OUTDIR.tar.gz"
-            tar -czf "$ARCHIVE" "$OUTDIR"
-            sha256sum "$ARCHIVE" | tee "$ARCHIVE.sha256" >> checksums.txt
+          # Crear checksums opcionalmente (sin comprimir)
+          : > checksums.txt
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            HASH_LINE=$(powershell -Command "(Get-FileHash -Algorithm SHA256 \"$OUTDIR\").Hash + '  ' + '$OUTDIR'")
+            echo "$HASH_LINE" >> checksums.txt
+          elif command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$OUTDIR"/* >> checksums.txt
           else
-            ARCHIVE="$OUTDIR.zip"
-            zip -r "$ARCHIVE" "$OUTDIR"
-            if command -v sha256sum >/dev/null 2>&1; then
-              sha256sum "$ARCHIVE" | tee "$ARCHIVE.sha256" >> checksums.txt
-            else
-              shasum -a 256 "$ARCHIVE" | tee "$ARCHIVE.sha256" >> checksums.txt
-            fi
+            shasum -a 256 "$OUTDIR"/* >> checksums.txt
           fi
 
       - name: Clean up build directories
@@ -252,9 +249,7 @@ jobs:
         with:
           name: PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
           path: |
-            *.zip
-            *.tar.gz
-            *.sha256
+            PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
             checksums.txt
 
   release:
