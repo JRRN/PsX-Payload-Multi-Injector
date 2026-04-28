@@ -124,13 +124,11 @@ jobs:
           echo "Cleaning disk on $RUNNER_OS..."
 
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            echo "Freeing macOS disk space..."
             sudo rm -rf /Library/Developer/CoreSimulator/Profiles/Runtimes/*
             sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport/*
             sudo rm -rf ~/Library/Developer/Xcode/DerivedData/*
             sudo rm -rf ~/Library/Caches/*
-            brew cleanup -s || true
-            rm -rf "$(brew --cache)" || true
+            brew cleanup --prune=all --quiet || true
             sudo rm -rf /usr/local/share/dotnet
             sudo rm -rf ~/Library/Android || true
           fi
@@ -139,16 +137,6 @@ jobs:
             sudo apt-get clean
             sudo apt-get autoclean
             sudo apt-get autoremove -y
-            sudo apt-get remove -y --purge \
-              build-essential \
-              ghc-* \
-              google-chrome-* \
-              firefox \
-              dotnet-* \
-              powershell \
-              mysql-* \
-              postgresql-* \
-              snap 2>/dev/null || true
             docker rmi $(docker image ls -aq) 2>/dev/null || true
             docker system prune -af 2>/dev/null || true
             rm -rf /usr/share/dotnet
@@ -199,44 +187,76 @@ jobs:
             --add-data "src/assets/logo.ico${SEP}assets" \
             $ICON_ARG
 
-      - name: Prepare artifact directory
+      - name: Package artifact
         shell: bash
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
-          ARTIFACT_DIR="PS_MultiInjector-$VERSION-${{ matrix.artifact_suffix }}"
-          
-          rm -rf "$ARTIFACT_DIR"
-          mkdir -p "$ARTIFACT_DIR"
-          cp -r dist/PS_MultiInjector-$VERSION/* "$ARTIFACT_DIR"/ 2>/dev/null || echo "No dist directory found"
+          OUTDIR="PS_MultiInjector-$VERSION-${{ matrix.artifact_suffix }}"
 
-      - name: Prepare source code
+          rm -rf "$OUTDIR"
+          mkdir -p "$OUTDIR"
+
+          cp -r dist/PS_MultiInjector-$VERSION/* "$OUTDIR"/
+
+          : > checksums.txt
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            HASH_LINE=$(powershell -Command "(Get-FileHash -Algorithm SHA256 \"$OUTDIR\").Hash + '  ' + '$OUTDIR'")
+            echo "$HASH_LINE" >> checksums.txt
+          elif command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$OUTDIR"/* >> checksums.txt
+          else
+            shasum -a 256 "$OUTDIR"/* >> checksums.txt
+          fi
+
+      - name: Clean up build directories
+        shell: bash
+        run: |
+          rm -rf dist/ build/ .PyInstaller/ __pycache__ src/**/__pycache__ tests/__pycache__ .pytest_cache/
+
+      - name: Package source code
         shell: bash
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
-          SRC_DIR="PS_MultiInjector-$VERSION-source"
-          
-          rm -rf "$SRC_DIR"
-          mkdir -p "$SRC_DIR"
-          
-          # Copy everything except excluded directories
-          find . -maxdepth 1 -type f \( -name "*.md" -o -name "*.txt" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "*.sh" -o -name "*.py" -o -name "*.ini" \) -exec cp {} "$SRC_DIR/" \;
-          
-          # Copy directories (excluding unwanted ones)
-          for dir in src payloads build_local ci-cd docs; do
-            [[ -d "$dir" ]] && cp -r "$dir" "$SRC_DIR/"
-          done
+          OUTDIR="PS_MultiInjector-$VERSION-source"
+
+          rm -rf "$OUTDIR"
+          mkdir -p "$OUTDIR"
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            powershell -Command "robocopy . \"$OUTDIR\" /E /XD .git dist build __pycache__ .pytest_cache .build_local .venv artifacts release_files"
+          else
+            rsync -av \
+              --exclude='.git' \
+              --exclude='dist' \
+              --exclude='build' \
+              --exclude='__pycache__' \
+              --exclude='*.pyc' \
+              --exclude='*.pyo' \
+              --exclude='.pytest_cache' \
+              --exclude='.build_local' \
+              --exclude='.venv' \
+              --exclude='artifacts' \
+              --exclude='release_files' \
+              ./ "$OUTDIR"/
+          fi
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            HASH_LINE=$(powershell -Command "(Get-FileHash -Algorithm SHA256 \"$OUTDIR\").Hash + '  ' + '$OUTDIR'")
+            echo "$HASH_LINE" >> checksums.txt
+          elif command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$OUTDIR"/* >> checksums.txt
+          else
+            shasum -a 256 "$OUTDIR"/* >> checksums.txt
+          fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
-          path: PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}/
-
-      - name: Upload source code
-        uses: actions/upload-artifact@v5
-        with:
-          name: PS_MultiInjector-${{ steps.get_version.outputs.version }}-source
-          path: PS_MultiInjector-${{ steps.get_version.outputs.version }}-source/
+          path: |
+            PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
+            PS_MultiInjector-${{ steps.get_version.outputs.version }}-source
+            checksums.txt
 
   release:
     needs: [build, version-bump]
@@ -246,20 +266,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v5
+      - name: Download all packaged artifacts
+        uses: actions/download-artifact@v4.1.0
         with:
-          path: artifacts/
-
-      - name: List downloaded artifacts
-        shell: bash
-        run: find artifacts/ -type f | head -20
+          path: release_files/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.version-bump.outputs.version }}
           name: PS MultiInjector v${{ needs.version-bump.outputs.version }}
-          files: artifacts/**/*
+          files: |
+            release_files/**/*
           generate_release_notes: true
           make_latest: true
