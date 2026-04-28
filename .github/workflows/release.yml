@@ -288,7 +288,7 @@ jobs:
         COUNTER=0
         DELAY=10
         
-        find release_files -type f | while read -r file; do
+        find release_files -type f \( -name "*.zip" -o -name "*.tar.gz" \) 2>/dev/null | head -20 | while read -r file; do
           COUNTER=$((COUNTER + 1))
           
           # Reintentar hasta 3 veces
