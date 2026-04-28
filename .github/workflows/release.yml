@@ -226,23 +226,40 @@ jobs:
         run: |
           rm -rf dist/ build/ .PyInstaller/ __pycache__ src/**/__pycache__ tests/__pycache__ .pytest_cache/
 
-      - name: Package source code
+            - name: Package source code
         shell: bash
         run: |
           VERSION=${{ steps.get_version.outputs.version }}
-          SRC_ZIP="PS_MultiInjector-$VERSION-source.zip"
+          OUTDIR="PS_MultiInjector-$VERSION-source"
 
-          rm -f "$SRC_ZIP" "$SRC_ZIP.sha256"
+          rm -rf "$OUTDIR"
+          mkdir -p "$OUTDIR"
 
-          zip -r "$SRC_ZIP" . \
-            -x "*.git*" "dist/*" "build/*" "__pycache__/*" "*.pyc" "*.pyo" "*.pytest_cache/*" \
-            ".build_local/*" ".venv/*" "artifacts/*" "release_files/*"
+          # Copiar el código fuente excluyendo carpetas no deseadas
+          rsync -av --exclude='.git' \
+                    --exclude='dist' \
+                    --exclude='build' \
+                    --exclude='__pycache__' \
+                    --exclude='*.pyc' \
+                    --exclude='*.pyo' \
+                    --exclude='.pytest_cache' \
+                    --exclude='.build_local' \
+                    --exclude='.venv' \
+                    --exclude='artifacts' \
+                    --exclude='release_files' \
+                    ./ "$OUTDIR"/
 
-          if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum "$SRC_ZIP" | tee "$SRC_ZIP.sha256" >> checksums.txt
+          # Crear checksums opcionalmente (sin comprimir)
+          : > checksums.txt
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            HASH_LINE=$(powershell -Command "(Get-FileHash -Algorithm SHA256 \"$OUTDIR\").Hash + '  ' + '$OUTDIR'")
+            echo "$HASH_LINE" >> checksums.txt
+          elif command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "$OUTDIR"/* >> checksums.txt
           else
-            shasum -a 256 "$SRC_ZIP" | tee "$SRC_ZIP.sha256" >> checksums.txt
+            shasum -a 256 "$OUTDIR"/* >> checksums.txt
           fi
+
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
@@ -250,7 +267,9 @@ jobs:
           name: PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
           path: |
             PS_MultiInjector-${{ steps.get_version.outputs.version }}-${{ matrix.artifact_suffix }}
+            PS_MultiInjector-${{ steps.get_version.outputs.version }}-source
             checksums.txt
+
 
   release:
     needs: [build, version-bump]
