@@ -83,6 +83,7 @@ jobs:
   build:
     needs: version-bump
     strategy:
+      max-parallel: 1
       matrix:
         include:
           - os: windows-latest
@@ -245,19 +246,20 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Prepare release files
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts/
+
+      - name: List downloaded artifacts
         shell: bash
-        run: |
-          mkdir -p release_files/
-          # Copy all artifact directories
-          cp -r PS_MultiInjector-*/  release_files/ 2>/dev/null || true
+        run: find artifacts/ -type f | head -20
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.version-bump.outputs.version }}
           name: PS MultiInjector v${{ needs.version-bump.outputs.version }}
-          files: |
-            release_files/**/*
+          files: artifacts/**/*
           generate_release_notes: true
           make_latest: true
