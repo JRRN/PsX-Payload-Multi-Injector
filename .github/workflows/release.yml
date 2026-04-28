@@ -264,19 +264,51 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+    - uses: actions/checkout@v5
 
-      - name: Download all packaged artifacts
-        uses: actions/download-artifact@v4.1.0
-        with:
-          path: release_files/
+    - name: Download all packaged artifacts
+      uses: actions/download-artifact@v4.1.0
+      with:
+        path: release_files/
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.version-bump.outputs.version }}
-          name: PS MultiInjector v${{ needs.version-bump.outputs.version }}
-          files: |
-            release_files/**/*
-          generate_release_notes: true
-          make_latest: true
+    - name: Create GitHub Release with Rate Limit Handling
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ needs.version-bump.outputs.version }}
+      run: |
+        # Crear release
+        gh release create v$VERSION \
+          --title "PS MultiInjector v$VERSION" \
+          --generate-notes \
+          --latest || echo "Release ya existe"
+        
+        # Cargar archivos con reintentos y pausas
+        BATCH_SIZE=5
+        COUNTER=0
+        DELAY=10
+        
+        find release_files -type f | while read -r file; do
+          COUNTER=$((COUNTER + 1))
+          
+          # Reintentar hasta 3 veces
+          for ((attempt=1; attempt<=3; attempt++)); do
+            if gh release upload v$VERSION "$file" --clobber 2>/dev/null; then
+              echo "✅ Subido: $file"
+              break
+            else
+              if [ $attempt -lt 3 ]; then
+                echo "⏳ Reintentando $file (intento $attempt/3)..."
+                sleep $((DELAY * attempt))
+              else
+                echo "⚠️ No se pudo subir $file después de 3 intentos"
+              fi
+            fi
+          done
+          
+          # Pausa entre lotes
+          if [ $((COUNTER % BATCH_SIZE)) -eq 0 ]; then
+            echo "📦 Lote completado. Esperando 15 segundos..."
+            sleep 15
+          fi
+        done
