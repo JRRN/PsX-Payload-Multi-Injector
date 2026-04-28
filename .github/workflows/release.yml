@@ -223,7 +223,7 @@ jobs:
           mkdir -p "$OUTDIR"
 
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            powershell -Command "robocopy . \"$OUTDIR\" /E /XD .git dist build __pycache__ .pytest_cache .build_local .venv artifacts release_files"
+            powershell -Command "robocopy . \"$OUTDIR\" /E /XD .git dist build __pycache__ .pytest_cache .build_local .venv artifacts release_files; exit 0"
           else
             rsync -av \
               --exclude='.git' \
